@@ -1,8 +1,8 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 
-const API = "http://localhost:5000/api";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -39,21 +39,24 @@ function App() {
 
   const [product, setProduct] = useState(emptyProduct);
 
-  async function request(path, options = {}) {
-    const response = await fetch(`${API}${path}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options.headers,
-      },
-    });
+ const request = useCallback(async (path, options = {}) => {
+  const response = await fetch(`${API}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Something went wrong");
-    return data;
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Something went wrong");
   }
 
+  return data;
+}, [token]);
   async function handleAuth(e) {
     e.preventDefault();
     setError("");
@@ -97,9 +100,37 @@ function App() {
   }
 }
 
-  useEffect(() => {
-    if (token) loadData();
-  }, [token, search]);
+ useEffect(() => {
+  if (!token) return;
+
+  let ignore = false;
+
+  async function fetchData() {
+    try {
+      const [productData, dashboardData, lowStockData] = await Promise.all([
+        request(`/products?q=${encodeURIComponent(search)}`),
+        request("/dashboard/stats"),
+        request("/dashboard/low-stock"),
+      ]);
+
+      if (!ignore) {
+        setProducts(productData);
+        setStats(dashboardData);
+        setLowStockProducts(lowStockData);
+      }
+    } catch (err) {
+      if (!ignore) {
+        setError(err.message);
+      }
+    }
+  }
+
+  fetchData();
+
+  return () => {
+    ignore = true;
+  };
+}, [token, search, request]);
 
   async function saveProduct(e) {
     e.preventDefault();
