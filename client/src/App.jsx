@@ -11,6 +11,7 @@ function App() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [products, setProducts] = useState([]);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalQuantity: 0,
@@ -80,17 +81,21 @@ function App() {
   }
 
   async function loadData() {
-    try {
-      const [productData, dashboardData] = await Promise.all([
-        request(`/products?q=${encodeURIComponent(search)}`),
-        request("/dashboard/stats"),
-      ]);
-      setProducts(productData);
-      setStats(dashboardData);
-    } catch (err) {
-      setError(err.message);
-    }
+  try {
+    const [productData, dashboardData, lowStockData] = await Promise.all([
+      request(`/products?q=${encodeURIComponent(search)}`),
+      request("/dashboard/stats"),
+      request("/dashboard/low-stock"),
+    ]);
+
+    setProducts(productData);
+    setStats(dashboardData);
+    setLowStockProducts(lowStockData);
+
+  } catch (err) {
+    setError(err.message);
   }
+}
 
   useEffect(() => {
     if (token) loadData();
@@ -231,6 +236,8 @@ function App() {
           </div>
         </section>
 
+        
+          
         <section className="panel">
           <h2>{editingId ? "Edit Product" : "Add New Product"}</h2>
           <form className="product-form" onSubmit={saveProduct}>
@@ -294,6 +301,37 @@ function App() {
                 })}
                 {products.length === 0 && (
                   <tr><td colSpan="6" className="empty">No products found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="panel">
+          <h2>Low Stock Items</h2>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>SKU</th>
+                  <th>Quantity on Hand</th>
+                  <th>Low Stock Threshold</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lowStockProducts.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td>{item.sku}</td>
+                    <td>{item.quantity}</td>
+                    <td>{item.lowStockThreshold}</td>
+                  </tr>
+                ))}
+                {lowStockProducts.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="empty">No low stock items.</td>
+                  </tr>
                 )}
               </tbody>
             </table>

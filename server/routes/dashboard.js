@@ -39,4 +39,32 @@ router.get("/stats", async (req, res) => {
     }
 });
 
+// GET LOW STOCK PRODUCTS
+router.get("/low-stock", async (req, res) => {
+    try {
+        const [results] = await db.promise().execute(
+            `SELECT
+                id,
+                name,
+                sku,
+                quantity,
+                COALESCE(low_stock_threshold, 5) AS lowStockThreshold
+             FROM products
+             WHERE organization_id = ?
+             AND quantity <= COALESCE(low_stock_threshold, 5)
+             ORDER BY quantity ASC`,
+            [req.user.organizationId]
+        );
+
+        res.json(results);
+
+    } catch (error) {
+        console.error("Low stock error:", error);
+
+        res.status(500).json({
+            message: "Failed to fetch low stock products"
+        });
+    }
+});
+
 module.exports = router;
