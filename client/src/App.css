@@ -56,6 +56,8 @@ button {
 
 .auth-card h2 {
   font-size: 22px;
+  font-weight: 700;
+  color: #25213b;
   margin-bottom: 22px;
 }
 

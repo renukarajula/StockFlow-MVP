@@ -59,8 +59,8 @@ function App() {
 }, [token]);
   async function handleAuth(e) {
     e.preventDefault();
-    setError("");
-
+   setError("");
+setMessage("");
     try {
       const data = await request(
         isRegister ? "/auth/register" : "/auth/login",
@@ -157,7 +157,12 @@ function App() {
       setProduct(emptyProduct);
       setEditingId(null);
       setMessage(editingId ? "Product updated successfully" : "Product added successfully");
-      loadData();
+
+setTimeout(() => {
+  setMessage("");
+}, 3000);
+
+loadData();
     } catch (err) {
       setError(err.message);
     }
@@ -179,6 +184,8 @@ function App() {
 
   async function deleteProduct(id) {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
+    setError("");
+    setMessage("");
 
     try {
       await request(`/products/${id}`, { method: "DELETE" });
@@ -194,6 +201,20 @@ function App() {
     setToken("");
     setUser(null);
     setProducts([]);
+    setLowStockProducts([]);
+    setStats({
+      totalProducts: 0,
+      totalQuantity: 0,
+      lowStockItems: 0,
+    });
+    setMessage("");
+    setError("");
+    setAuth({
+  name: "",
+  email: "",
+  password: "",
+  organizationName: "",
+});
   }
 
   if (!token) {
@@ -290,8 +311,20 @@ function App() {
               value={product.low_stock_threshold}
               onChange={(e) => setProduct({ ...product, low_stock_threshold: e.target.value })} />
             <button type="submit">{editingId ? "Update Product" : "Add Product"}</button>
-            {editingId && <button type="button" className="cancel"
-              onClick={() => { setEditingId(null); setProduct(emptyProduct); }}>Cancel</button>}
+            {editingId && (
+  <button
+    type="button"
+    className="cancel"
+    onClick={() => {
+      setEditingId(null);
+      setProduct(emptyProduct);
+      setError("");
+      setMessage("");
+    }}
+  >
+    Cancel
+  </button>
+)}
           </form>
         </section>
 
